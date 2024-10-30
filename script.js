@@ -9,7 +9,11 @@ let turn = "Red";
 let selectedPiece = null;
 let validMoves = [];
 
+// Bases cells
+const redBase = { row: 3, col: 0 };
+const blueBase = { row: 3, col: 8 };
 
+// Board creation
 function createBoard() {
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
@@ -17,16 +21,26 @@ function createBoard() {
       cell.classList.add("cell");
       cell.dataset.row = row;
       cell.dataset.col = col;
+
       if (isWaterCell(row, col)) {
         cell.classList.add("water"); // Adding a class for water styling
       }
+
+      // Add base cells
+      if (row === redBase.row && col === redBase.col) {
+        cell.classList.add("red-base");
+      } else if (row === blueBase.row && col === blueBase.col) {
+        cell.classList.add("blue-base");
+      }
+
       cell.addEventListener("click", () => handleCellClick(row, col));
       board.appendChild(cell);
     }
   }
 }
+
 function initializePieces() {
-  // SEt up the pieces
+  // Set up the pieces
   pieces["redElephant"] = { row: 0, col: 2, symbol: "E", color: "red", value: 8 }; // done
   pieces["redLion"] = { row: 6, col: 0, symbol: "L", color: "red", value: 7 };  //done
   pieces["redTiger"] = { row: 0, col: 0, symbol: "T", color: "red", value: 6 }; //done
@@ -80,74 +94,86 @@ const waterCells = [
   function isWaterCell(row, col) {
     return waterCells.some(cell => cell.row === row && cell.col === col);
   }
-//   Handling cell selection
-  function handleCellClick(row, col) {
-    if (selectedPiece) {
-      // Is valid move
-      if (validMoves.some(move => move.row === row && move.col === col)) {
-        moveSelectedPiece(row, col);
-        turn = turn === "Red" ? "Blue" : "Red"; // Changing turn only if a move is valid
-        clearHighlights();
-        selectedPiece = null;
-      } else {
-        // Clear if clicked not on a valid move
-        clearHighlights();
-        selectedPiece = null;
-      }
-    } else {
-      // Piece selection if their turn
-      for (const key in pieces) {
-        const piece = pieces[key];
-        if (piece.row === row && piece.col === col && piece.color.toLowerCase() === turn.toLowerCase()) {
-          selectedPiece = key;
-          validMoves = calculateValidMoves(piece);
-          highlightValidMoves(validMoves);
-        }
-      }
-    }
-  }
-//   Moving pieces
-  function moveSelectedPiece(row, col) {
-    const targetPiece = Object.values(pieces).find(p => p.row === row && p.col === col);
+
   
-    if (targetPiece) {
-      if (targetPiece.color !== pieces[selectedPiece].color) {
-        // Value check and mouse/elephant check
-        if (
-          (pieces[selectedPiece].value >= targetPiece.value && !(pieces[selectedPiece].symbol === "E" && targetPiece.symbol === "M")) ||
-          (pieces[selectedPiece].symbol === "M" && targetPiece.symbol === "E") || // Mouse can capture elephant
-          (pieces[selectedPiece].symbol === "M" && targetPiece.symbol === "M") // Mouse can capture another mouse
-        ) {
-          delete pieces[Object.keys(pieces).find(key => pieces[key] === targetPiece)]; // Takes takes takes
-        } else {
-          // If capture is not allowed reset 
-          clearHighlights();
-          selectedPiece = null;
-          return;
-        }
-      } else {
-        // If trying to capture a piece of the same color reset 
-        clearHighlights();
-        selectedPiece = null;
-        return;
-      }
-    }
-  
-    // Transfering a piece
-    pieces[selectedPiece].row = row;
-    pieces[selectedPiece].col = col;
-    updateBoard();
-  }
-  
-// Move possibilities
+// Styles the water and the base
 const style = document.createElement('style');
 style.innerHTML = `
   .water {
     background-color: lightblue;
   }
+  .red-base {
+    background-image: url('base.png');
+    background-size: cover;
+  }
+  .blue-base {
+    background-image: url('base.png');
+    background-size: cover;
+  }
 `;
 document.head.appendChild(style);
 
+// Handle cell clicks
+function handleCellClick(row, col) {
+  if (selectedPiece) {
+    if (validMoves.some(move => move.row === row && move.col === col)) {
+      moveSelectedPiece(row, col);
+      checkWinCondition(row, col); // Check if win
+      turn = turn === "Red" ? "Blue" : "Red";
+      clearHighlights();
+      selectedPiece = null;
+    } else {
+      clearHighlights();
+      selectedPiece = null;
+    }
+  } else {
+    for (const key in pieces) {
+      const piece = pieces[key];
+      if (piece.row === row && piece.col === col && piece.color.toLowerCase() === turn.toLowerCase()) {
+        selectedPiece = key;
+        validMoves = calculateValidMoves(piece);
+        highlightValidMoves(validMoves);
+      }
+    }
+  }
+}
+// Moving the piece
+function moveSelectedPiece(row, col) {
+  const targetPiece = Object.values(pieces).find(p => p.row === row && p.col === col);
+
+  if (targetPiece) {
+    if (
+      (targetPiece.color !== pieces[selectedPiece].color &&
+        (pieces[selectedPiece].value >= targetPiece.value || (pieces[selectedPiece].symbol === "M" && targetPiece.symbol === "E"))) ||
+      targetPiece.color !== pieces[selectedPiece].color
+    ) {
+      delete pieces[Object.keys(pieces).find(key => pieces[key] === targetPiece)];
+    } else {
+      clearHighlights();
+      selectedPiece = null;
+      return;
+    }
+  }
+
+  pieces[selectedPiece].row = row;
+  pieces[selectedPiece].col = col;
+  updateBoard();
+}
+
+// Check for win condition
+function checkWinCondition(row, col) {
+  const piece = pieces[selectedPiece];
+  
+  if (row === redBase.row && col === redBase.col && piece.color === "blue") {
+    alert("Blue wins!");
+    resetGame();
+  } else if (row === blueBase.row && col === blueBase.col && piece.color === "red") {
+    alert("Red wins!");
+    resetGame();
+  }
+}
+
+// What moves are valid
 function calculateValidMoves(piece) {
   const moves = [
     { row: piece.row - 1, col: piece.col }, // up
@@ -156,7 +182,6 @@ function calculateValidMoves(piece) {
     { row: piece.row, col: piece.col + 1 }  // right
   ];
 
-  // Add jump moves for Lion and Tiger
   if (piece.symbol === "L" || piece.symbol === "T") {
     const jumpMoves = getJumpMoves(piece);
     moves.push(...jumpMoves);
@@ -169,22 +194,22 @@ function calculateValidMoves(piece) {
 
     if (targetPiece) {
       if (targetPiece.color === piece.color) return false;
-
-      // Only allow capture if value conditions are met
-      if (
-        piece.value < targetPiece.value && !(piece.symbol === "M" && targetPiece.symbol === "E") ||
-        (piece.symbol === "E" && targetPiece.symbol === "M")
-      ) return false;
+      if (piece.value < targetPiece.value && !(piece.symbol === "M" && targetPiece.symbol === "E")) return false;
+      if (piece.symbol === "E" && targetPiece.symbol === "M") return false;
     }
 
     if (isWaterCell(move.row, move.col) && piece.symbol !== "M") return false;
-
     if (isWaterCell(piece.row, piece.col) && targetPiece && targetPiece.symbol !== "M") return false;
+
+    // Prevent pieces from enetering their own base
+    if ((move.row === redBase.row && move.col === redBase.col && piece.color === "red") ||
+        (move.row === blueBase.row && move.col === blueBase.col && piece.color === "blue")) return false;
 
     return true;
   });
 }
 
+// Jump moves for tigers and lions
 function getJumpMoves(piece) {
   const jumpMoves = [];
   const directions = [
@@ -244,6 +269,15 @@ function getJumpMoves(piece) {
     document.querySelectorAll(".highlight").forEach(cell => cell.classList.remove("highlight"));
     validMoves = [];
   }
+
+  // Reset game 
+function resetGame() {
+  turn = "Red";
+  selectedPiece = null;
+  initializePieces();
+  updateTurnDisplay();
+  clearHighlights();
+}
   
   // Start Game
   createBoard();
