@@ -9,6 +9,7 @@ let turn = "Red";
 let selectedPiece = null;
 let validMoves = [];
 
+
 function createBoard() {
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
@@ -16,12 +17,14 @@ function createBoard() {
       cell.classList.add("cell");
       cell.dataset.row = row;
       cell.dataset.col = col;
+      if (isWaterCell(row, col)) {
+        cell.classList.add("water"); // Adding a class for water styling
+      }
       cell.addEventListener("click", () => handleCellClick(row, col));
       board.appendChild(cell);
     }
   }
 }
-
 function initializePieces() {
   // SEt up the pieces
   pieces["redElephant"] = { row: 0, col: 2, symbol: "E", color: "red", value: 8 }; // done
@@ -137,44 +140,96 @@ const waterCells = [
   }
   
 // Move possibilities
-  function calculateValidMoves(piece) {
-    const moves = [
-      { row: piece.row - 1, col: piece.col }, // up
-      { row: piece.row + 1, col: piece.col }, // down
-      { row: piece.row, col: piece.col - 1 }, // left
-      { row: piece.row, col: piece.col + 1 }  // right
-    ];
-  
-    return moves.filter(move => {
-      // Check if the move is within board
-      if (move.row < 0 || move.row >= rows || move.col < 0 || move.col >= cols) {
-        return false;
-      }
-  
-      const targetPiece = Object.values(pieces).find(p => p.row === move.row && p.col === move.col);
-  
-      if (targetPiece) {
-        // same color is not a valid move
-        if (targetPiece.color === piece.color) return false;
+const style = document.createElement('style');
+style.innerHTML = `
+  .water {
+    background-color: lightblue;
+  }
+`;
+document.head.appendChild(style);
+
+function calculateValidMoves(piece) {
+  const moves = [
+    { row: piece.row - 1, col: piece.col }, // up
+    { row: piece.row + 1, col: piece.col }, // down
+    { row: piece.row, col: piece.col - 1 }, // left
+    { row: piece.row, col: piece.col + 1 }  // right
+  ];
+
+  // Add jump moves for Lion and Tiger
+  if (piece.symbol === "L" || piece.symbol === "T") {
+    const jumpMoves = getJumpMoves(piece);
+    moves.push(...jumpMoves);
+  }
+
+  return moves.filter(move => {
+    if (move.row < 0 || move.row >= rows || move.col < 0 || move.col >= cols) return false;
+
+    const targetPiece = Object.values(pieces).find(p => p.row === move.row && p.col === move.col);
+
+    if (targetPiece) {
+      if (targetPiece.color === piece.color) return false;
+
+      // Only allow capture if value conditions are met
+      if (
+        piece.value < targetPiece.value && !(piece.symbol === "M" && targetPiece.symbol === "E") ||
+        (piece.symbol === "E" && targetPiece.symbol === "M")
+      ) return false;
+    }
+
+    if (isWaterCell(move.row, move.col) && piece.symbol !== "M") return false;
+
+    if (isWaterCell(piece.row, piece.col) && targetPiece && targetPiece.symbol !== "M") return false;
+
+    return true;
+  });
+}
+
+function getJumpMoves(piece) {
+  const jumpMoves = [];
+  const directions = [
+    { dr: -1, dc: 0 }, // up
+    { dr: 1, dc: 0 },  // down
+    { dr: 0, dc: -1 }, // left
+    { dr: 0, dc: 1 }   // right
+  ];
+
+  directions.forEach(direction => {
+    let row = piece.row + direction.dr;
+    let col = piece.col + direction.dc;
+
+    // Check if we're starting from a water cell
+    if (isWaterCell(row, col)) {
+      let hasMouseBlock = false;
+
+      // Jump to the other side of water
+      while (isWaterCell(row, col)) {
+        const blockingPiece = Object.values(pieces).find(p => p.row === row && p.col === col);
+
+        // If a mouse is in the water cell, jumping is blocked
+        if (blockingPiece && blockingPiece.symbol === "M" && blockingPiece.color !== piece.color) {
+          hasMouseBlock = true;
+          break;
+        }
         
-        // Only allow capture if value conditions are met
-        if (
-          piece.value < targetPiece.value && !(piece.symbol === "M" && targetPiece.symbol === "E") || // Mouse can capture Elephant
-          (piece.symbol === "E" && targetPiece.symbol === "M") // Elephant can't capture Mouse
-        ) {
-          return false;
+        row += direction.dr;
+        col += direction.dc;
+      }
+
+      if (!hasMouseBlock && row >= 0 && row < rows && col >= 0 && col < cols) {
+        const targetPiece = Object.values(pieces).find(p => p.row === row && p.col === col);
+
+        // Allow jump move if the destination is empty or can be captured
+        if (!targetPiece || targetPiece.color !== piece.color && piece.value >= targetPiece.value) {
+          jumpMoves.push({ row, col });
         }
       }
-  
-      // Only mouse can flow
-      if (isWaterCell(move.row, move.col) && piece.symbol !== "M") return false;
-  
-      // If in water mouse can be captured by another in water mouse
-      if (isWaterCell(piece.row, piece.col) && targetPiece && targetPiece.symbol !== "M") return false;
-  
-      return true;
-    });
-  }
+    }
+  });
+
+  return jumpMoves;
+}
+
   
 //   Show valid moves on the board
   function highlightValidMoves(moves) {
