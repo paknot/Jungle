@@ -1,4 +1,4 @@
-// script.js
+//COOOODIIIIIIING
 
 const board = document.getElementById("board");
 const turnDisplay = document.getElementById("turnDisplay");
@@ -13,6 +13,21 @@ let validMoves = [];
 const redBase = { row: 3, col: 0 };
 const blueBase = { row: 3, col: 8 };
 
+// Trappers
+const redTraps = [
+  { row: 2, col: 0 },
+  { row: 3, col: 1 },
+  { row: 4, col: 0 }
+];
+const blueTraps = [
+  { row: 2, col: 8 },
+  { row: 3, col: 7 },
+  { row: 4, col: 8 }
+];
+
+//Original value of the piecebefore entering a trap
+const originalValues = {};
+
 // Board creation
 function createBoard() {
   for (let row = 0; row < rows; row++) {
@@ -23,7 +38,7 @@ function createBoard() {
       cell.dataset.col = col;
 
       if (isWaterCell(row, col)) {
-        cell.classList.add("water"); // Adding a class for water styling
+        cell.classList.add("water");
       }
 
       // Add base cells
@@ -31,6 +46,13 @@ function createBoard() {
         cell.classList.add("red-base");
       } else if (row === blueBase.row && col === blueBase.col) {
         cell.classList.add("blue-base");
+      }
+
+      // Add trap cells
+      if (redTraps.some(trap => trap.row === row && trap.col === col)) {
+        cell.classList.add("red-trap");
+      } else if (blueTraps.some(trap => trap.row === row && trap.col === col)) {
+        cell.classList.add("blue-trap");
       }
 
       cell.addEventListener("click", () => handleCellClick(row, col));
@@ -67,7 +89,7 @@ function updateBoard() {
     cell.textContent = "";
     cell.classList.remove("red", "blue", "highlight");
   });
-  
+
   for (const key in pieces) {
     const piece = pieces[key];
     const cell = document.querySelector(`.cell[data-row='${piece.row}'][data-col='${piece.col}']`);
@@ -78,48 +100,33 @@ function updateBoard() {
   }
   updateTurnDisplay();
 }
-// Change turn TO FIX
+// Change turn ig fixed
 function updateTurnDisplay() {
   turnDisplay.textContent = `Turn: ${turn}`;
 }
 
 // Water cells
 const waterCells = [
-    { row: 1, col: 3 }, { row: 1, col: 4 }, { row: 1, col: 5 },
-    { row: 2, col: 3 }, { row: 2, col: 4 }, { row: 2, col: 5 },
-    { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 5 },
-    { row: 5, col: 3 }, { row: 5, col: 4 }, { row: 5, col: 5 }
-  ];
+  { row: 1, col: 3 }, { row: 1, col: 4 }, { row: 1, col: 5 },
+  { row: 2, col: 3 }, { row: 2, col: 4 }, { row: 2, col: 5 },
+  { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 5 },
+  { row: 5, col: 3 }, { row: 5, col: 4 }, { row: 5, col: 5 }
+];
 //   Checking if water cell
-  function isWaterCell(row, col) {
-    return waterCells.some(cell => cell.row === row && cell.col === col);
-  }
+function isWaterCell(row, col) {
+  return waterCells.some(cell => cell.row === row && cell.col === col);
+}
 
-  
-// Styles the water and the base
-const style = document.createElement('style');
-style.innerHTML = `
-  .water {
-    background-color: lightblue;
-  }
-  .red-base {
-    background-image: url('base.png');
-    background-size: cover;
-  }
-  .blue-base {
-    background-image: url('base.png');
-    background-size: cover;
-  }
-`;
-document.head.appendChild(style);
 
-// Handle cell clicks
+
+//   Handling cell selection
 function handleCellClick(row, col) {
   if (selectedPiece) {
     if (validMoves.some(move => move.row === row && move.col === col)) {
       moveSelectedPiece(row, col);
-      checkWinCondition(row, col); // Check if win
+      checkWinCondition(row, col); // Check for win condition after a move
       turn = turn === "Red" ? "Blue" : "Red";
+      updateTurnDisplay(); // turns called
       clearHighlights();
       selectedPiece = null;
     } else {
@@ -137,15 +144,16 @@ function handleCellClick(row, col) {
     }
   }
 }
-// Moving the piece
+
 function moveSelectedPiece(row, col) {
+  const piece = pieces[selectedPiece];
   const targetPiece = Object.values(pieces).find(p => p.row === row && p.col === col);
 
   if (targetPiece) {
     if (
-      (targetPiece.color !== pieces[selectedPiece].color &&
-        (pieces[selectedPiece].value >= targetPiece.value || (pieces[selectedPiece].symbol === "M" && targetPiece.symbol === "E"))) ||
-      targetPiece.color !== pieces[selectedPiece].color
+      (targetPiece.color !== piece.color &&
+        (piece.value >= targetPiece.value || (piece.symbol === "M" && targetPiece.symbol === "E"))) ||
+      targetPiece.color !== piece.color
     ) {
       delete pieces[Object.keys(pieces).find(key => pieces[key] === targetPiece)];
     } else {
@@ -155,15 +163,39 @@ function moveSelectedPiece(row, col) {
     }
   }
 
-  pieces[selectedPiece].row = row;
-  pieces[selectedPiece].col = col;
+  // restore value when leaving opponent's trap(highly unlikely but wanted this here)
+  if (isOnOpponentTrap(piece.row, piece.col, piece.color) && originalValues[selectedPiece] != null) {
+    piece.value = originalValues[selectedPiece];
+    delete originalValues[selectedPiece];
+  }
+
+  // Update piece position
+  piece.row = row;
+  piece.col = col;
+
+  // Apply trap effect if moving into an opponent's trap
+  if (isOnOpponentTrap(row, col, piece.color)) {
+    originalValues[selectedPiece] = piece.value; // Store original value
+    piece.value = 0; // Set value to 0 in opponent's trap
+  }
+
   updateBoard();
+}
+
+// Check if the cell is an opponent's trap
+function isOnOpponentTrap(row, col, color) {
+  if (color === "red") {
+    return blueTraps.some(trap => trap.row === row && trap.col === col);
+  } else if (color === "blue") {
+    return redTraps.some(trap => trap.row === row && trap.col === col);
+  }
+  return false;
 }
 
 // Check for win condition
 function checkWinCondition(row, col) {
   const piece = pieces[selectedPiece];
-  
+
   if (row === redBase.row && col === redBase.col && piece.color === "blue") {
     alert("Blue wins!");
     resetGame();
@@ -176,10 +208,10 @@ function checkWinCondition(row, col) {
 // What moves are valid
 function calculateValidMoves(piece) {
   const moves = [
-    { row: piece.row - 1, col: piece.col }, // up
-    { row: piece.row + 1, col: piece.col }, // down
-    { row: piece.row, col: piece.col - 1 }, // left
-    { row: piece.row, col: piece.col + 1 }  // right
+    { row: piece.row - 1, col: piece.col },
+    { row: piece.row + 1, col: piece.col },
+    { row: piece.row, col: piece.col - 1 },
+    { row: piece.row, col: piece.col + 1 }
   ];
 
   if (piece.symbol === "L" || piece.symbol === "T") {
@@ -192,18 +224,20 @@ function calculateValidMoves(piece) {
 
     const targetPiece = Object.values(pieces).find(p => p.row === move.row && p.col === move.col);
 
+    const inEnemyTrap = isOnOpponentTrap(piece.row, piece.col, piece.color);
+
+    // Allow capture of any enemy piece if in an enemy trap
     if (targetPiece) {
       if (targetPiece.color === piece.color) return false;
-      if (piece.value < targetPiece.value && !(piece.symbol === "M" && targetPiece.symbol === "E")) return false;
+      if (!inEnemyTrap && piece.value < targetPiece.value && !(piece.symbol === "M" && targetPiece.symbol === "E")) return false;
       if (piece.symbol === "E" && targetPiece.symbol === "M") return false;
     }
 
     if (isWaterCell(move.row, move.col) && piece.symbol !== "M") return false;
     if (isWaterCell(piece.row, piece.col) && targetPiece && targetPiece.symbol !== "M") return false;
 
-    // Prevent pieces from enetering their own base
     if ((move.row === redBase.row && move.col === redBase.col && piece.color === "red") ||
-        (move.row === blueBase.row && move.col === blueBase.col && piece.color === "blue")) return false;
+      (move.row === blueBase.row && move.col === blueBase.col && piece.color === "blue")) return false;
 
     return true;
   });
@@ -236,7 +270,7 @@ function getJumpMoves(piece) {
           hasMouseBlock = true;
           break;
         }
-        
+
         row += direction.dr;
         col += direction.dc;
       }
@@ -255,22 +289,22 @@ function getJumpMoves(piece) {
   return jumpMoves;
 }
 
-  
-//   Show valid moves on the board
-  function highlightValidMoves(moves) {
-    moves.forEach(move => {
-      const cell = document.querySelector(`.cell[data-row='${move.row}'][data-col='${move.col}']`);
-      if (cell) cell.classList.add("highlight");
-    });
-  }
-  
-//   Clear highlighted moves
-  function clearHighlights() {
-    document.querySelectorAll(".highlight").forEach(cell => cell.classList.remove("highlight"));
-    validMoves = [];
-  }
 
-  // Reset game 
+//   Show valid moves on the board
+function highlightValidMoves(moves) {
+  moves.forEach(move => {
+    const cell = document.querySelector(`.cell[data-row='${move.row}'][data-col='${move.col}']`);
+    if (cell) cell.classList.add("highlight");
+  });
+}
+
+//   Clear highlighted moves
+function clearHighlights() {
+  document.querySelectorAll(".highlight").forEach(cell => cell.classList.remove("highlight"));
+  validMoves = [];
+}
+
+// Reset game 
 function resetGame() {
   turn = "Red";
   selectedPiece = null;
@@ -278,8 +312,7 @@ function resetGame() {
   updateTurnDisplay();
   clearHighlights();
 }
-  
-  // Start Game
-  createBoard();
-  initializePieces();
-  
+
+// Start Game
+createBoard();
+initializePieces();
