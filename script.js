@@ -1,5 +1,54 @@
 //COOOODIIIIIIING
 
+// Spinning gear
+const settingsIcon = document.getElementById("settingsIcon");
+const settingsPopup = document.getElementById("settingsPopup");
+const rulesIcon = document.getElementById("rulesIcon");
+const rulesPopup = document.getElementById("rulesPopup");
+
+// Toggle the rules popup and color when the rules icon is clicked
+rulesIcon.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const isRulesOpen = rulesPopup.style.display === "none";
+  rulesPopup.style.display = isRulesOpen ? "block" : "none";
+  settingsPopup.style.display = "none"; // Close settings popup if open
+  settingsIcon.classList.remove("active");
+  rulesIcon.classList.toggle("active", isRulesOpen);
+});
+
+// Toggle the settings popup and spin/color when the settings icon is clicked
+settingsIcon.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const isSettingsOpen = settingsPopup.style.display === "none";
+  settingsPopup.style.display = isSettingsOpen ? "block" : "none";
+  rulesPopup.style.display = "none"; // Close rules popup if open
+  rulesIcon.classList.remove("active");
+  settingsIcon.classList.toggle("active", isSettingsOpen);
+
+  // Add spin animation when settings icon is clicked
+  if (isSettingsOpen) {
+    settingsIcon.classList.add("spin");
+    setTimeout(() => settingsIcon.classList.remove("spin"), 1000); // Removes spin after 1s
+  }
+});
+
+// Hide both popups when clicking outside of them
+document.addEventListener("click", (event) => {
+  if (!rulesPopup.contains(event.target) && event.target !== rulesIcon) {
+    rulesPopup.style.display = "none";
+    rulesIcon.classList.remove("active");
+  }
+  if (!settingsPopup.contains(event.target) && event.target !== settingsIcon) {
+    settingsPopup.style.display = "none";
+    settingsIcon.classList.remove("active");
+  }
+});
+
+
+
+// GAME GAME GAME GAME
+
+// GAME GAME GAME GAME
 const board = document.getElementById("board");
 const turnDisplay = document.getElementById("turnDisplay");
 const rows = 7;
@@ -61,6 +110,8 @@ function createBoard() {
   }
 }
 
+
+
 function initializePieces() {
   // Set up the pieces
   pieces["redElephant"] = { row: 0, col: 2, symbol: "E", color: "red", value: 8 }; // done
@@ -84,9 +135,11 @@ function initializePieces() {
   updateBoard();
 }
 // Update board
+// Update board
+// Update board
 function updateBoard() {
   document.querySelectorAll(".cell").forEach(cell => {
-    cell.textContent = "";
+    cell.innerHTML = ""; // Clear cell content
     cell.classList.remove("red", "blue", "highlight");
   });
 
@@ -94,12 +147,23 @@ function updateBoard() {
     const piece = pieces[key];
     const cell = document.querySelector(`.cell[data-row='${piece.row}'][data-col='${piece.col}']`);
     if (cell) {
-      cell.textContent = piece.symbol;
-      cell.classList.add(piece.color);
+      // Check if an image already exists; if not, create it
+      let img = cell.querySelector("img");
+      if (!img) {
+        img = document.createElement("img");
+        img.classList.add("piece");
+        cell.appendChild(img); // Append image only if it doesn't already exist
+      }
+      img.src = `Images/${piece.color}${piece.symbol}.png`; // Set the image source
+      img.alt = piece.symbol; // Set alt text as the piece symbol
+
+      cell.classList.add(piece.color); // Add color class to the cell
     }
   }
   updateTurnDisplay();
 }
+
+
 // Change turn ig fixed
 function updateTurnDisplay() {
   turnDisplay.textContent = `Turn: ${turn}`;
@@ -121,12 +185,15 @@ function isWaterCell(row, col) {
 
 //   Handling cell selection
 function handleCellClick(row, col) {
+
+  event.preventDefault(); 
+
   if (selectedPiece) {
     if (validMoves.some(move => move.row === row && move.col === col)) {
       moveSelectedPiece(row, col);
       checkWinCondition(row, col); // Check for win condition after a move
       turn = turn === "Red" ? "Blue" : "Red";
-      updateTurnDisplay(); // turns called
+      updateTurnDisplay(); // Update turns
       clearHighlights();
       selectedPiece = null;
     } else {
@@ -150,9 +217,12 @@ function moveSelectedPiece(row, col) {
   const targetPiece = Object.values(pieces).find(p => p.row === row && p.col === col);
 
   if (targetPiece) {
+    // Check if capturing an opponent piece on a trap or if a mouse capture rule applies
+    const capturingTrapMouse = targetPiece.symbol === "M" && isOnOpponentTrap(targetPiece.row, targetPiece.col, targetPiece.color) && piece.symbol === "E";
+
     if (
       (targetPiece.color !== piece.color &&
-        (piece.value >= targetPiece.value || (piece.symbol === "M" && targetPiece.symbol === "E"))) ||
+        (piece.value >= targetPiece.value || (piece.symbol === "M" && targetPiece.symbol === "E") || capturingTrapMouse)) ||
       targetPiece.color !== piece.color
     ) {
       delete pieces[Object.keys(pieces).find(key => pieces[key] === targetPiece)];
@@ -163,7 +233,7 @@ function moveSelectedPiece(row, col) {
     }
   }
 
-  // restore value when leaving opponent's trap(highly unlikely but wanted this here)
+  // Restore original value when leaving opponent's trap
   if (isOnOpponentTrap(piece.row, piece.col, piece.color) && originalValues[selectedPiece] != null) {
     piece.value = originalValues[selectedPiece];
     delete originalValues[selectedPiece];
@@ -191,6 +261,7 @@ function isOnOpponentTrap(row, col, color) {
   }
   return false;
 }
+
 
 // Check for win condition
 function checkWinCondition(row, col) {

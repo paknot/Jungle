@@ -3,10 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jungle chess</title>
+  <title>Jungle Chess</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://kit.fontawesome.com/eceeda5593.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 <body>
+
+  <!-- Rules and settings -->
+  <div class="top-right-icons">
+    <i id="rulesIcon" class="fa-solid fa-scale-balanced" title="Rules"></i>
+    <i id="settingsIcon" class="fa-solid fa-gear" title="Settings"></i>
+    <div id="rulesPopup" class="popup">
+      Game Rules:
+    </div>
+    <div id="settingsPopup" class="popup">Settings:</div>
+  </div>
+  
+  
   <h1>Jungle Chess</h1>
   <div id="turnDisplay">Turn: Red</div>
   <div id="board"></div>

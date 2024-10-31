@@ -78,3 +78,54 @@ body {
   background-position: center;
   background-repeat: no-repeat;
 }
+.top-right-icons {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.top-right-icons i {
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+  transition: color 0.3s;
+}
+/* Set the color when fixed */
+#rulesIcon.active,
+#settingsIcon.active {
+  color: rgb(171, 40, 207); 
+}
+
+/* Spin */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s ease-out;
+}
+
+.popup {
+  display: none;
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: 250px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+  text-align: center;
+}
+/* Need to center */
+.piece {
+  max-width: 100%;
+  height: auto;
+  pointer-events: none; /* Ensure images don’t intercept clicks */
+}
