@@ -44,11 +44,12 @@ document.addEventListener("click", (event) => {
   }
 });
 
+
+// DARK  or LIGHT mode slider
 document.body.classList.add(localStorage.getItem("theme") || "light-theme");
 
 const themeToggle = document.getElementById("themeToggle");
 
-// Initialize toggle position based on current theme
 themeToggle.checked = document.body.classList.contains("dark-theme");
 
 themeToggle.addEventListener("change", () => {
@@ -63,6 +64,8 @@ themeToggle.addEventListener("change", () => {
 
 
 
+
+
 // GAME GAME GAME GAME
 
 // GAME GAME GAME GAME
@@ -74,6 +77,14 @@ const pieces = {};
 let turn = "Red";
 let selectedPiece = null;
 let validMoves = [];
+
+// Sounds
+
+const moveSound = new Audio("Images/move.mp3");
+const ggSound = new Audio("Images/gg.mp3");
+const takesSound = new Audio("Images/takes.mp3");
+
+let isMuted = false;
 
 // Bases cells
 const redBase = { row: 3, col: 0 };
@@ -127,7 +138,27 @@ function createBoard() {
   }
 }
 
+// mute sounds 
 
+const muteToggle = document.getElementById("muteToggle");
+muteToggle.checked = isMuted;
+
+muteToggle.addEventListener("change", () => {
+  isMuted = muteToggle.checked;
+  localStorage.setItem("muteState", isMuted ? "true" : "false");
+});
+
+// Function to play sound if not muted
+function playSound(sound) {
+  if (!isMuted) {
+    sound.play();
+  }
+}
+
+window.addEventListener("load", () => {
+  isMuted = localStorage.getItem("muteState") === "true";
+  muteToggle.checked = isMuted;
+});
 
 function initializePieces() {
   // Set up the pieces
@@ -168,14 +199,15 @@ function updateBoard() {
       if (!img) {
         img = document.createElement("img");
         img.classList.add("piece");
-        cell.appendChild(img); 
+        cell.appendChild(img);
       }
       img.src = `Images/${piece.color}${piece.symbol}.png`;
-      img.alt = piece.symbol; 
+      img.alt = piece.symbol;
 
-      cell.classList.add(piece.color); 
+      cell.classList.add(piece.color);
     }
   }
+  playSound(moveSound); 
   updateTurnDisplay();
 }
 
@@ -202,7 +234,7 @@ function isWaterCell(row, col) {
 //   Handling cell selection
 function handleCellClick(row, col) {
 
-  event.preventDefault(); 
+  event.preventDefault();
 
   if (selectedPiece) {
     if (validMoves.some(move => move.row === row && move.col === col)) {
@@ -250,13 +282,23 @@ function moveSelectedPiece(row, col) {
       targetPiece.color !== piece.color
     ) {
       delete pieces[Object.keys(pieces).find(key => pieces[key] === targetPiece)];
+      playSound(takesSound);
+
+      // Mute move sound
+      moveSound.muted = true;
+
+      // Unmute the move sound after 2 seconds
+      setTimeout(() => {
+        moveSound.muted = false;
+      }, 1000);
+
     } else {
       clearHighlights();
       selectedPiece = null;
       return;
     }
   }
-// check if opponent on trap
+  // check if opponent on trap
   if (isOnOpponentTrap(piece.row, piece.col, piece.color) && originalValues[selectedPiece] != null) {
     piece.value = originalValues[selectedPiece];
     delete originalValues[selectedPiece];
@@ -289,9 +331,11 @@ function checkWinCondition(row, col) {
   const piece = pieces[selectedPiece];
 
   if (row === redBase.row && col === redBase.col && piece.color === "blue") {
+    playSound(ggSound);
     alert("Blue wins!");
     resetGame();
   } else if (row === blueBase.row && col === blueBase.col && piece.color === "red") {
+    playSound(ggSound);
     alert("Red wins!");
     resetGame();
   }
@@ -429,18 +473,18 @@ function handleTakeBack() {
     const opponentResponse = confirm(`${opponentTurn} requests a take back. Blue do you accept?`);
 
     if (opponentResponse) {
-        takeBackMove();
-        takeBackRequested = false;
+      takeBackMove();
+      takeBackRequested = false;
     } else {
-        alert("Take-back request denied.");
-        takeBackRequested = false;
+      alert("Take-back request denied.");
+      takeBackRequested = false;
     }
-}
+  }
 }
 
 // Take back logic
 function takeBackMove() {
-  const lastMove = moveHistory.pop(); 
+  const lastMove = moveHistory.pop();
 
   if (!lastMove) return;
 
