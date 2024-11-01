@@ -44,6 +44,23 @@ document.addEventListener("click", (event) => {
   }
 });
 
+document.body.classList.add(localStorage.getItem("theme") || "light-theme");
+
+const themeToggle = document.getElementById("themeToggle");
+
+// Initialize toggle position based on current theme
+themeToggle.checked = document.body.classList.contains("dark-theme");
+
+themeToggle.addEventListener("change", () => {
+  if (themeToggle.checked) {
+    document.body.classList.replace("light-theme", "dark-theme");
+    localStorage.setItem("theme", "dark-theme");
+  } else {
+    document.body.classList.replace("dark-theme", "light-theme");
+    localStorage.setItem("theme", "light-theme");
+  }
+});
+
 
 
 // GAME GAME GAME GAME
@@ -134,12 +151,11 @@ function initializePieces() {
 
   updateBoard();
 }
-// Update board
-// Update board
+
 // Update board
 function updateBoard() {
   document.querySelectorAll(".cell").forEach(cell => {
-    cell.innerHTML = ""; // Clear cell content
+    cell.innerHTML = ""; // Clear cell 
     cell.classList.remove("red", "blue", "highlight");
   });
 
@@ -147,17 +163,17 @@ function updateBoard() {
     const piece = pieces[key];
     const cell = document.querySelector(`.cell[data-row='${piece.row}'][data-col='${piece.col}']`);
     if (cell) {
-      // Check if an image already exists; if not, create it
+      // Check if an image already exists; 
       let img = cell.querySelector("img");
       if (!img) {
         img = document.createElement("img");
         img.classList.add("piece");
-        cell.appendChild(img); // Append image only if it doesn't already exist
+        cell.appendChild(img); 
       }
-      img.src = `Images/${piece.color}${piece.symbol}.png`; // Set the image source
-      img.alt = piece.symbol; // Set alt text as the piece symbol
+      img.src = `Images/${piece.color}${piece.symbol}.png`;
+      img.alt = piece.symbol; 
 
-      cell.classList.add(piece.color); // Add color class to the cell
+      cell.classList.add(piece.color); 
     }
   }
   updateTurnDisplay();
@@ -191,7 +207,7 @@ function handleCellClick(row, col) {
   if (selectedPiece) {
     if (validMoves.some(move => move.row === row && move.col === col)) {
       moveSelectedPiece(row, col);
-      checkWinCondition(row, col); // Check for win condition after a move
+      checkWinCondition(row, col); // Check for win condition
       turn = turn === "Red" ? "Blue" : "Red";
       updateTurnDisplay(); // Update turns
       clearHighlights();
@@ -211,15 +227,23 @@ function handleCellClick(row, col) {
     }
   }
 }
-
+// Move pieces 
 function moveSelectedPiece(row, col) {
   const piece = pieces[selectedPiece];
   const targetPiece = Object.values(pieces).find(p => p.row === row && p.col === col);
 
+  // Save move history
+  moveHistory.push({
+    pieceKey: selectedPiece,
+    prevRow: piece.row,
+    prevCol: piece.col,
+    capturedPiece: targetPiece
+      ? { key: Object.keys(pieces).find(key => pieces[key] === targetPiece), ...targetPiece }
+      : null
+  });
+  //Capturing pieces
   if (targetPiece) {
-    // Check if capturing an opponent piece on a trap or if a mouse capture rule applies
     const capturingTrapMouse = targetPiece.symbol === "M" && isOnOpponentTrap(targetPiece.row, targetPiece.col, targetPiece.color) && piece.symbol === "E";
-
     if (
       (targetPiece.color !== piece.color &&
         (piece.value >= targetPiece.value || (piece.symbol === "M" && targetPiece.symbol === "E") || capturingTrapMouse)) ||
@@ -232,21 +256,18 @@ function moveSelectedPiece(row, col) {
       return;
     }
   }
-
-  // Restore original value when leaving opponent's trap
+// check if opponent on trap
   if (isOnOpponentTrap(piece.row, piece.col, piece.color) && originalValues[selectedPiece] != null) {
     piece.value = originalValues[selectedPiece];
     delete originalValues[selectedPiece];
   }
 
-  // Update piece position
   piece.row = row;
   piece.col = col;
 
-  // Apply trap effect if moving into an opponent's trap
   if (isOnOpponentTrap(row, col, piece.color)) {
-    originalValues[selectedPiece] = piece.value; // Store original value
-    piece.value = 0; // Set value to 0 in opponent's trap
+    originalValues[selectedPiece] = piece.value;
+    piece.value = 0;
   }
 
   updateBoard();
@@ -374,6 +395,76 @@ function clearHighlights() {
   document.querySelectorAll(".highlight").forEach(cell => cell.classList.remove("highlight"));
   validMoves = [];
 }
+
+// TAKEBACKS
+const moveHistory = [];
+let takeBackRequested = false;
+
+// Add the Take Back button
+const takeBackButton = document.createElement("button");
+const icon = document.createElement("span");
+icon.classList.add("fa-solid", "fa-backward");  // Add Font Awesome classes
+takeBackButton.textContent = " Take Back";
+takeBackButton.prepend(icon);
+
+takeBackButton.id = "takeBackButton";
+
+document.body.appendChild(takeBackButton);
+
+takeBackButton.addEventListener("click", handleTakeBack);
+
+// Alerts and call
+function handleTakeBack() {
+  if (moveHistory.length === 0) {
+    alert("No moves to take back.");
+    return;
+  }
+
+  if (!takeBackRequested) {
+    takeBackRequested = true;
+
+    // Who's turn it is
+    let opponentTurn = turn === "Red" ? "Blue" : "Red";
+
+    const opponentResponse = confirm(`${opponentTurn} requests a take back. Blue do you accept?`);
+
+    if (opponentResponse) {
+        takeBackMove();
+        takeBackRequested = false;
+    } else {
+        alert("Take-back request denied.");
+        takeBackRequested = false;
+    }
+}
+}
+
+// Take back logic
+function takeBackMove() {
+  const lastMove = moveHistory.pop(); 
+
+  if (!lastMove) return;
+
+  // Restore previous position
+  const { pieceKey, prevRow, prevCol, capturedPiece } = lastMove;
+  const piece = pieces[pieceKey];
+
+  piece.row = prevRow;
+  piece.col = prevCol;
+
+  // Restore captured piece 
+  if (capturedPiece) {
+    pieces[capturedPiece.key] = capturedPiece;
+  }
+
+  // Switch turn back
+  turn = turn === "Red" ? "Blue" : "Red";
+
+  updateBoard();
+  updateTurnDisplay();
+  alert("Move taken back!");
+}
+
+
 
 // Reset game 
 function resetGame() {
