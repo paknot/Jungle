@@ -181,6 +181,46 @@ body.dark-theme {
   color: #333;
   transition: color 0.3s;
 }
+
+#rulesPopup {
+  display: none;
+  position: absolute;
+  top: 40px;
+  right: 0;
+  max-height: 80vh; 
+  padding: 15px;
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  text-align: center;
+  word-wrap: break-word; /* Ensure text wraps within the container */
+}
+
+#rulesPopup img {
+  max-width: 100%; 
+  height: auto;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+
+#rulesPopup h2 {
+  font-size: 18px;
+  margin-top: 0;
+}
+
+#rulesPopup p {
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+#rulesPopup ul {
+  margin-left: 20px;
+  padding-left: 0;
+  list-style-type: disc;
+}
 /* Set the color when fixed */
 #rulesIcon.active,
 #settingsIcon.active {
@@ -203,6 +243,7 @@ body.dark-theme {
   top: 40px;
   right: 0;
   width: 250px;
+  max-height: 700px;
   padding: 10px;
   background-color: #f9f9f9;
   border: 1px solid #ccc;
@@ -210,6 +251,7 @@ body.dark-theme {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   z-index: 1;
   text-align: center;
+  word-wrap: break-word;
 }
 
 .piece {

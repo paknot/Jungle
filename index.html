@@ -16,7 +16,30 @@
     <i id="rulesIcon" class="fa-solid fa-scale-balanced" title="Rules"></i>
     <i id="settingsIcon" class="fa-solid fa-gear" title="Settings"></i>
     <div id="rulesPopup" class="popup">
-      Game Rules:
+      <h2>Game Rules:</h2>
+      
+      <h2>Objective</h2>
+      <p>The goal of the game is to move a piece onto an opponent’s base, also called the den.</p>
+      
+      <h2>Pieces</h2>
+      <p>Each side has eight pieces representing different animals, each with a different rank. Higher ranking pieces can capture all pieces of identical or weaker ranking, with one exception: the mouse may capture the elephant, while the elephant may or may not capture the rat.</p>
+      <p>The animal ranking, from strongest to weakest, is:</p>
+      <img src="Images/diagram.png" alt="Game board illustration">
+      <h2>Movement</h2>
+      <p>Players alternate moves with White moving first. During their turn, a player must move. Each piece moves one square horizontally or vertically (not diagonally). A piece may not move to its own den.</p>
+      <p>There are special rules related to the water squares:</p>
+      <ul>
+        <li>The mouse is the only animal that is allowed to go onto a water square.</li>
+        <li>The mouse may not capture the elephant or another rat on land directly from a water square. The rat may attack the opponent rat in the water if both pieces are in the water. Similarly, a rat on land may not attack a rat in the water.</li>
+        <li>The lion and tiger pieces may jump over a river by moving horizontally or vertically, but only if no enemy rat is on any intervening water squares. They can capture enemy pieces by such jumps.</li>
+      </ul>
+      
+      <h2>Capturing</h2>
+      <p>Animals capture the opponent pieces by "eating" them. A piece can capture any enemy piece which has the same or lower rank, with some exceptions:</p>
+      <ul>
+        <li>The rat may capture the elephant by gnawing at its brains.</li>
+        <li>A player may capture any enemy piece in one of the player's trap squares regardless of rank.</li>
+      </ul>
     </div>
     <div id="settingsPopup" class="popup">
       Settings:
